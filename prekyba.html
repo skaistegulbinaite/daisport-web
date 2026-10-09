@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>NOKTI treneriui</title>
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+/* Jūsų parduotuvė (her pick 2026-10-06, design/options-35 #5 + the Mokėjimai box from #2):
+   three steps on top, products on the left, Mokėjimai / link / sales on the right. Phones: one column. */
+.back { color: var(--blue); font-weight: 700; font-size: 14px; text-decoration: none; }
+.steps { display: grid; gap: 12px; padding-left: 0; }
+.step { background: var(--card); border-radius: var(--r-l); padding: 16px 18px; display: flex; gap: 14px; align-items: flex-start; cursor: pointer; }
+.step .dot { width: 30px; height: 30px; border-radius: 15px; border: 2px solid var(--faint); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex: none; }
+.step.done .dot { background: var(--blue); border-color: var(--blue); color: var(--on-blue); }
+.step strong { display: block; font-size: 16px; }
+.step span.muted { display: block; margin-top: 2px; overflow-wrap: anywhere; }
+.cols, .col { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.btn.small { width: auto; }
+@media (min-width: 900px) {
+  .wrap { max-width: 1180px; }
+  .steps { grid-template-columns: repeat(3, 1fr); }
+  .cols { grid-template-columns: 1.1fr 1fr; align-items: start; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><img src="logo.svg" alt="NOKTI" style="width:auto;height:30px;border-radius:0"></div>
+    <div class="row"><a class="back" id="backApp" href="/" hidden>Grįžti į NOKTI</a><button class="btn ghost small" id="out" hidden>Atsijungti</button></div>
+  </div>
+
+  <!-- signed out -->
+  <section id="login" hidden class="stack">
+    <h1>Treneriui</h1>
+    <p class="muted">Prisijunkite su ta pačia paskyra kaip programėlėje.</p>
+    <div class="card">
+      <form id="loginForm" class="stack">
+        <label>El. paštas<input id="email" type="email" autocomplete="email" required></label>
+        <label>Slaptažodis<input id="password" type="password" autocomplete="current-password" required></label>
+        <p class="err" id="loginErr" hidden></p>
+        <button class="btn wide" type="submit">Prisijungti</button>
+      </form>
+      <button class="btn wide" data-p="apple">Prisijungti su Apple</button>
+      <button class="btn dark wide" data-p="google">Prisijungti su Google</button>
+      <button class="btn dark wide" data-p="facebook">Prisijungti su Facebook</button>
+      <p class="muted">Paskyros dar neturite? Atsisiųskite programėlę ir pasirinkite „Esu treneris“.</p>
+    </div>
+  </section>
+
+  <!-- signed in, not a trainer -->
+  <section id="notTrainer" hidden class="card">
+    <h2>Ši paskyra ne trenerio</h2>
+    <p class="muted">Trenerio paskyrą susikursite programėlėje: pasirinkite „Esu treneris“.</p>
+  </section>
+
+  <!-- the trainer -->
+  <section id="trainer" hidden class="stack">
+    <h1 id="hello">Jūsų parduotuvė</h1>
+
+    <div class="steps">
+      <div class="step" id="step1" data-to="payCard"><span class="dot">1</span><div><strong>Prijunkite Stripe</strong><span class="muted" id="step1t"></span></div></div>
+      <div class="step" id="step2" data-to="productsCard"><span class="dot">2</span><div><strong>Sukurkite produktą</strong><span class="muted" id="step2t"></span></div></div>
+      <div class="step" id="step3" data-to="linkCard"><span class="dot">3</span><div><strong>Pasidalinkite nuoroda</strong><span class="muted" id="step3t"></span></div></div>
+    </div>
+
+    <div class="cols">
+      <div class="col">
+    <div class="card" id="productsCard">
+      <div class="row between"><h2>Produktai</h2><button class="btn small" id="newProduct">+ Naujas</button></div>
+      <p class="muted" id="noProducts">Ką parduodate klientams? Pvz. „Programa + priežiūra“ kas mėnesį arba „12 savaičių iššūkis“ vienu mokėjimu.</p>
+      <div id="products" class="stack"></div>
+
+      <form id="productForm" class="stack" hidden>
+        <input type="hidden" id="pId">
+        <label>Pavadinimas<input id="pName" maxlength="80" required placeholder="Programa + priežiūra"></label>
+        <label>Aprašymas (nebūtina)<textarea id="pDesc" maxlength="400" placeholder="Kas įeina: programa, mitybos planas, savaitinė peržiūra..."></textarea></label>
+        <div class="stack">
+          <span class="muted">Kaip mokama</span>
+          <div class="chips" id="pKind">
+            <button type="button" class="chip on" data-v="monthly">Kas mėnesį</button>
+            <button type="button" class="chip" data-v="once">Vienu mokėjimu</button>
+          </div>
+        </div>
+        <div class="two">
+          <label>Kaina, €<input id="pPrice" type="number" min="10" step="1" inputmode="decimal" required placeholder="100"></label>
+          <label id="pLenWrap" hidden>Trukmė
+            <div class="row" style="flex-wrap:nowrap">
+              <input id="pLen" type="number" min="1" step="1" value="12" style="flex:1">
+              <select id="pUnit" style="flex:1"><option value="7">sav.</option><option value="30">mėn.</option><option value="1">d.</option></select>
+            </div>
+          </label>
+        </div>
+        <p class="muted" id="pHint">Klientas naudojasi programėle, kol moka. Sustojus mokėjimui, prieiga baigiasi.</p>
+        <p class="err" id="pErr" hidden></p>
+        <div class="row">
+          <button class="btn blue" type="submit">Išsaugoti</button>
+          <button class="btn ghost" type="button" id="pCancel">Atšaukti</button>
+        </div>
+      </form>
+    </div>
+      </div>
+      <div class="col">
+    <div class="card" id="refundCard" hidden>
+      <h2>Grąžinimo prašymai</h2>
+      <p class="muted">Klientai prašo grąžinti pinigus. „Grąžinti“ grąžina visą sumą į kliento kortelę, sustabdo prenumeratą ir baigia prieigą.</p>
+      <div class="list" id="refunds"></div>
+    </div>
+    <div class="card" id="payCard">
+      <div class="row between"><h2>Mokėjimai</h2><span class="pill" id="payPill"></span></div>
+      <p class="muted" id="payText"></p>
+      <div class="row">
+        <button class="btn blue" id="stripeBtn">Prijungti Stripe</button>
+        <a class="btn dark small" id="stripeDash" href="https://dashboard.stripe.com" target="_blank" rel="noopener" hidden>Atidaryti Stripe</a>
+      </div>
+      <p class="err" id="payErr" hidden></p>
+    </div>
+    <div class="card" id="linkCard" hidden>
+      <h2>Parduotuvės nuoroda</h2>
+      <p class="muted">Įdėkite į Instagram aprašymą arba siųskite bet kam. Kas nusipirks, atsiras Jūsų klientų sąraše.</p>
+      <div class="linkbox"><span id="shopLink"></span><button class="btn small" id="copyShop">Kopijuoti</button></div>
+      <p class="muted">Konkrečiam žmogui asmeninę nuorodą sukursite programėlėje: „Pridėti klientą“.</p>
+    </div>
+    <div class="card" id="salesCard" hidden>
+      <h2>Pardavimai</h2>
+      <div class="list" id="sales"></div>
+      <p class="muted">Pinigai, grąžinimai ir išmokos: Jūsų Stripe paskyroje.</p>
+    </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="muted" id="loading">Kraunama...</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="common.js"></script>
+<script>
+let me = null, state = null, products = [], kind = 'monthly', stripeInfo = null;
+
+async function start() {
+  const q = new URLSearchParams(location.search);
+  // a one-time login from the app ("Susikurti produktus")
+  const token = q.get('login');
+  if (token) {
+    await sb.auth.verifyOtp({ token_hash: token, type: 'magiclink' }).catch(() => {});
+    q.delete('login');
+    history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : ''));
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  show('loading', false);
+  if (!session) { show('login'); return; }
+  show('out'); show('backApp');
+  const { data: prof } = await sb.from('profiles').select('id, display_name, role').eq('id', session.user.id).single();
+  if (!prof || prof.role !== 'trainer') { show('notTrainer'); return; }
+  me = prof;
+  $('hello').textContent = prof.display_name ? `Sveiki, ${prof.display_name.split(' ')[0]}` : 'Jūsų parduotuvė';
+  show('trainer');
+  if (q.get('stripe')) { await fn('stripe-connect', { action: 'status' }).catch(() => {}); history.replaceState(null, '', location.pathname); }
+  await refresh();
+  if (q.get('go') === 'products' && !products.length) openForm();
+}
+
+async function refresh() {
+  const { data } = await sb.rpc('my_shop_state');
+  state = data || {};
+  // not ready yet: ask Stripe where it stands (pending check vs. not started)
+  if (!state.stripe_ready) { stripeInfo = await fn('stripe-connect', { action: 'status' }).catch(() => null); if (stripeInfo?.ready) state.stripe_ready = true; }
+  const r = await sb.from('products').select('*').eq('trainer_id', me.id).eq('active', true).order('position').order('price_cents');
+  products = r.data || [];
+  renderPay(); renderProducts(); await renderLink(); await renderSales(); renderSteps(); await renderRefunds();
+}
+
+// refund requests from clients (schema-051, her option A: the trainer decides)
+async function renderRefunds() {
+  const { data } = await sb.rpc('trainer_refund_requests');
+  const rows = data || [];
+  show('refundCard', rows.length > 0);
+  const st = { refunded: 'Grąžinta', declined: 'Atmesta' };
+  $('refunds').innerHTML = rows.map((r) => `
+    <div class="product">
+      <div class="row between"><strong>${esc(r.client || 'Klientas')}</strong><span class="price">${euro(r.amount_cents)}</span></div>
+      <span class="muted">${esc(r.product || 'Pirkinys')} · sumokėta ${dateLt(r.paid_at)}</span>
+      ${r.reason ? `<span class="muted">„${esc(r.reason)}“</span>` : ''}
+      ${r.status === 'waiting'
+        ? `<div class="row"><button class="btn small" data-refund="${r.id}">Grąžinti</button><button class="btn ghost small" data-decline="${r.id}">Atmesti</button></div>`
+        : `<span class="pill ${r.status === 'refunded' ? 'ok' : ''}">${st[r.status] || r.status}</span>`}
+      <p class="err" id="rerr-${r.id}" hidden></p>
+    </div>`).join('');
+  $('refunds').querySelectorAll('[data-refund]').forEach((b) => (b.onclick = async () => {
+    const r = rows.find((x) => x.id === b.dataset.refund);
+    if (!confirm(`Grąžinti ${euro(r.amount_cents)} klientui ${r.client || ''}? Prenumerata sustos, prieiga baigsis.`)) return;
+    b.disabled = true;
+    try { await fn('billing', { action: 'refund', request_id: r.id }); await refresh(); }
+    catch (e) { $('rerr-' + r.id).textContent = e.message; show('rerr-' + r.id); b.disabled = false; }
+  }));
+  $('refunds').querySelectorAll('[data-decline]').forEach((b) => (b.onclick = async () => {
+    if (!confirm('Atmesti šį prašymą?')) return;
+    await sb.rpc('decline_refund', { rid: b.dataset.decline }); await refresh();
+  }));
+}
+
+// the three steps on top (her pick 2026-10-06): Stripe, a product, the link
+function renderSteps() {
+  const ready = !!state.stripe_ready, pending = !ready && stripeInfo?.status === 'pending';
+  $('step1').classList.toggle('done', ready);
+  $('step1t').textContent = ready ? 'Įjungta · apie 8 % mokesčiai' : pending ? 'Tikrinama' : 'Neįjungta';
+  $('step2').classList.toggle('done', products.length > 0);
+  $('step2t').textContent = products.length ? `Produktų: ${products.length}` : 'Dar nėra';
+  const link = $('shopLink').textContent;
+  $('step3t').textContent = ready && products.length && link ? link.replace(/^https?:\/\//, '') : 'Atsiras, kai įjungsite mokėjimus ir sukursite produktą';
+}
+document.querySelectorAll('.step').forEach((el) => (el.onclick = () => { const to = $(el.dataset.to); if (to && !to.hidden) to.scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
+
+function renderPay() {
+  const ready = state.stripe_ready;
+  const pending = !ready && stripeInfo?.status === 'pending';
+  const started = !ready && stripeInfo?.started;
+  $('payPill').textContent = ready ? 'Įjungta' : pending ? 'Tikrinama' : 'Neįjungta';
+  $('payPill').className = 'pill ' + (ready ? 'ok' : pending ? '' : 'warn');
+  $('payText').textContent = ready
+    ? 'Klientų mokėjimai eina tiesiai į Jūsų Stripe paskyrą. Stripe mokestis ~2,4 %, mūsų 5,6 % (su PVM), iš viso apie 8 %.'
+    : pending ? 'Stripe tikrina Jūsų duomenis. Dažniausiai tai užtrunka kelias minutes, kartais iki 1-2 dienų. Produktus galite kurti jau dabar.'
+    : started ? 'Stripe registracija nebaigta. Tęskite nuo ten, kur sustojote.'
+    : 'Klientai Jums moka per Stripe. Užsiregistruokite Stripe (apie 10 min.): reikės asmens dokumento ir banko sąskaitos.';
+  $('stripeBtn').textContent = ready ? 'Stripe nustatymai' : started && !pending ? 'Tęsti Stripe registraciją' : pending ? 'Peržiūrėti Stripe duomenis' : 'Prijungti Stripe';
+  show('stripeDash', ready);
+}
+$('stripeBtn').onclick = async () => {
+  $('stripeBtn').disabled = true; show('payErr', false);
+  try { const r = await fn('stripe-connect', { action: 'onboard' }); location.href = r.url; }
+  catch (e) { $('payErr').textContent = e.message; show('payErr'); $('stripeBtn').disabled = false; }
+};
+
+function renderProducts() {
+  show('noProducts', !products.length);
+  $('products').innerHTML = products.map((p) => `
+    <div class="product">
+      <div class="row between"><strong>${esc(p.name)}</strong><span class="price">${priceLabel(p)}</span></div>
+      <span class="muted">${whenLabel(p)}</span>
+      ${p.description ? `<span class="muted">${esc(p.description)}</span>` : ''}
+      <div class="row"><button class="btn dark small" data-edit="${p.id}">Keisti</button><button class="btn ghost small" data-hide="${p.id}">Paslėpti</button></div>
+    </div>`).join('');
+  $('products').querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => openForm(products.find((p) => p.id === b.dataset.edit))));
+  $('products').querySelectorAll('[data-hide]').forEach((b) => (b.onclick = async () => {
+    await sb.from('products').update({ active: false }).eq('id', b.dataset.hide); await refresh();
+  }));
+}
+
+function setKind(k) {
+  kind = k;
+  $('pKind').querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.v === k));
+  show('pLenWrap', k === 'once');
+  hint();
+}
+$('pKind').querySelectorAll('.chip').forEach((c) => (c.onclick = () => setKind(c.dataset.v)));
+function days() { return Math.max(1, Math.round(Number($('pLen').value || 0))) * Number($('pUnit').value); }
+function hint() {
+  const price = Math.round(Number($('pPrice').value || 0) * 100);
+  let text = kind === 'monthly'
+    ? 'Klientas naudojasi programėle, kol moka. Sustojus mokėjimui, prieiga baigiasi.'
+    : `Klientas naudojasi programėle ${lengthLabel(days()).replace('mėnuo', 'mėnesį').replace('savaitė', 'savaitę').replace('diena', 'dieną')} nuo apmokėjimo.`;
+  const perMonth = kind === 'monthly' ? price : price * 30 / days();
+  if (price >= 1000 && perMonth < 2000) text += ' Mažiau nei 20 € per mėnesį: tokius produktus peržiūrime.';
+  $('pHint').textContent = text;
+}
+['pPrice', 'pLen', 'pUnit'].forEach((id) => $(id).addEventListener('input', hint));
+
+function openForm(p) {
+  $('pId').value = p?.id || '';
+  $('pName').value = p?.name || '';
+  $('pDesc').value = p?.description || '';
+  $('pPrice').value = p ? p.price_cents / 100 : '';
+  if (p?.kind === 'once') {
+    const d = p.access_days;
+    if (d % 30 === 0) { $('pLen').value = d / 30; $('pUnit').value = '30'; }
+    else if (d % 7 === 0) { $('pLen').value = d / 7; $('pUnit').value = '7'; }
+    else { $('pLen').value = d; $('pUnit').value = '1'; }
+  }
+  setKind(p?.kind || 'monthly');
+  show('pErr', false); show('productForm'); show('newProduct', false);
+  $('pName').focus();
+}
+function closeForm() { show('productForm', false); show('newProduct'); }
+$('newProduct').onclick = () => openForm();
+$('pCancel').onclick = closeForm;
+$('productForm').onsubmit = async (e) => {
+  e.preventDefault(); show('pErr', false);
+  const price = Math.round(Number($('pPrice').value) * 100);
+  if (!(price >= 1000)) { $('pErr').textContent = 'Mažiausia kaina 10 €.'; show('pErr'); return; }
+  const row = {
+    trainer_id: me.id, name: $('pName').value.trim(), description: $('pDesc').value.trim(),
+    kind, price_cents: price, access_days: kind === 'once' ? days() : null, updated_at: new Date().toISOString(),
+  };
+  const id = $('pId').value;
+  const { error } = id ? await sb.from('products').update(row).eq('id', id) : await sb.from('products').insert(row);
+  if (error) { $('pErr').textContent = 'Nepavyko išsaugoti. Patikrinkite laukus.'; show('pErr'); return; }
+  closeForm(); await refresh();
+};
+
+async function renderLink() {
+  const ok = state.stripe_ready && products.length;
+  show('linkCard', !!ok);
+  if (!ok) return;
+  let slug = state.slug;
+  if (!slug) { const { data } = await sb.rpc('ensure_shop_slug', { tid: me.id }); slug = data; }
+  const url = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}shop.html?s=${slug}`;
+  $('shopLink').textContent = url;
+  $('copyShop').onclick = () => copy(url, $('copyShop'));
+}
+
+async function renderSales() {
+  const { data } = await sb.from('payments').select('created_at, amount_cents, refunded, product_id').eq('trainer_id', me.id).order('created_at', { ascending: false }).limit(20);
+  const rows = data || [];
+  show('salesCard', rows.length > 0);
+  const names = Object.fromEntries(products.map((p) => [p.id, p.name]));
+  $('sales').innerHTML = rows.map((r) => `<div class="item"><span>${dateLt(r.created_at)} · ${esc(names[r.product_id] || 'Produktas')}</span><strong>${r.refunded ? 'grąžinta' : euro(r.amount_cents)}</strong></div>`).join('');
+}
+
+$('loginForm').onsubmit = async (e) => {
+  e.preventDefault(); show('loginErr', false);
+  const { error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
+  if (error) { $('loginErr').textContent = 'Neteisingas el. paštas arba slaptažodis.'; show('loginErr'); return; }
+  location.reload();
+};
+document.querySelectorAll('#login [data-p]').forEach((b) => (b.onclick = () => sb.auth.signInWithOAuth({ provider: b.dataset.p, options: { redirectTo: location.origin + location.pathname, ...(b.dataset.p === 'facebook' ? { scopes: 'email' } : {}) } })));
+$('out').onclick = async () => { await sb.auth.signOut(); location.href = location.pathname; };
+start();
+</script>
+</body>
+</html>
