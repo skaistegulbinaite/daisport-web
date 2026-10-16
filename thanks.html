@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Apmokėta</title>
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="brand"><img src="logo.svg" alt="NOKTI" style="width:auto;height:30px;border-radius:0"></div></div>
+
+  <section id="wait" class="card"><h2>Tikrinamas mokėjimas...</h2><p class="muted">Tai užtrunka kelias sekundes.</p></section>
+  <section id="fail" hidden class="card"><h2>Mokėjimo dar nematome</h2><p class="muted" id="failText">Jei pinigai nuskaičiuoti, perkraukite šį puslapį po minutės arba parašykite treneriui.</p></section>
+
+  <section id="new" hidden class="stack">
+    <h1>Ačiū! Apmokėta.</h1>
+    <p class="muted" id="newLead"></p>
+    <div class="card">
+      <span class="section">Jūsų kodas</span>
+      <div class="code" id="code"></div>
+      <button class="btn dark small" id="copyCode">Kopijuoti kodą</button>
+    </div>
+    <div class="card">
+      <h2>Kaip prisijungti</h2>
+      <ol class="steps">
+        <li id="stepApp">Atsisiųskite programėlę <strong data-brand></strong>.</li>
+        <li id="stepLogin">Susikurkite paskyrą su tuo pačiu el. paštu, kurį nurodėte mokėdami. Prie trenerio prisijungsite automatiškai.</li>
+        <li>Arba spauskite „Turiu kodą“ ir įveskite kodą iš šio puslapio.</li>
+      </ol>
+      <a class="btn blue wide" id="storeBtn" hidden target="_blank" rel="noopener">Atsisiųsti programėlę</a>
+      <p class="muted">Pasiklydo kodas? Treneris jį mato savo programėlėje.</p>
+    </div>
+  </section>
+
+  <section id="renewed" hidden class="stack">
+    <h1>Ačiū! Pratęsta.</h1>
+    <div class="card"><p id="renewText"></p><p class="muted">Gali toliau naudotis programėle kaip įprasta.</p></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="common.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+async function start() {
+  for (let i = 0; i < 6; i++) {
+    let r = null;
+    try { r = await fn('checkout-done', { session_id: q.get('s'), slug: q.get('t') }); } catch (_) {}
+    if (r && r.state === 'new') {
+      show('wait', false); show('new');
+      $('code').textContent = r.code;
+      if (r.joined) $('stepLogin').textContent = 'Prisijunkite tuo pačiu mygtuku kaip čia (Apple, Google ar Facebook). Jūs jau prijungti prie trenerio.';
+      $('newLead').textContent = `Treneris ${r.trainer} jau mato, kad sumokėjote.` + (r.access_until ? ` Prieiga iki ${dateLt(r.access_until)}` : '');
+      $('copyCode').onclick = () => copy(r.code, $('copyCode'));
+      if (APP_STORE_URL) { $('storeBtn').href = APP_STORE_URL; show('storeBtn'); }
+      document.querySelectorAll('[data-brand]').forEach((el) => (el.textContent = BRAND));
+      return;
+    }
+    if (r && r.state === 'renewed') {
+      show('wait', false); show('renewed');
+      $('renewText').textContent = r.access_until ? `Jūsų prieiga su treneriu ${r.trainer} galioja iki ${dateLt(r.access_until)}` : `Jūsų prieiga su treneriu ${r.trainer} pratęsta.`;
+      return;
+    }
+    await new Promise((res) => setTimeout(res, 2500));
+  }
+  show('wait', false); show('fail');
+}
+start();
+</script>
+</body>
+</html>
