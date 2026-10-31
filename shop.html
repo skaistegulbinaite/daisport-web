@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Trenerio parduotuvė</title>
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="brand"><img src="logo.svg" alt="NOKTI" style="width:auto;height:30px;border-radius:0"></div></div>
+
+  <p class="muted" id="loading">Kraunama...</p>
+  <section id="missing" hidden class="card"><h2>Nuoroda neveikia</h2><p class="muted">Paprašyk trenerio atsiųsti naują nuorodą.</p></section>
+  <section id="notReady" hidden class="card"><h2>Parduotuvė dar ruošiama</h2><p class="muted">Treneris dar neįjungė mokėjimų. Pabandykite vėliau.</p></section>
+  <section id="paid" hidden class="card">
+    <h2>Jau apmokėta</h2>
+    <p class="muted">Atsisiųskite programėlę ir prisijunkite su tuo pačiu el. paštu, kurį nurodėte mokėdami. Prie trenerio prisijungsite automatiškai. Kodą rasite patvirtinimo puslapyje arba paklauskite trenerio.</p>
+  </section>
+
+  <section id="shop" hidden class="stack">
+    <div class="row">
+      <div class="avatar" id="avatar"></div>
+      <div><p class="muted" id="kicker">Treneris</p><h1 id="trainer" style="margin:0"></h1></div>
+    </div>
+    <p class="muted" id="intro">Pasirinkite, ką perkate. Po apmokėjimo gausite prieigą prie programėlės su savo treneriu.</p>
+
+    <div class="stack" id="products"></div>
+
+    <form id="buy" class="card stack" hidden>
+      <h2 id="buyTitle"></h2>
+      <!-- her call 2026-09-30: sign in here and the app needs no code later -->
+      <div id="authBox" class="stack">
+        <p class="muted">Prisijunkite, ir programėlėje prisijungsite tuo pačiu mygtuku, be kodo.</p>
+        <button type="button" class="btn wide" data-p="apple">Tęsti su Apple</button>
+        <button type="button" class="btn dark wide" data-p="google">Tęsti su Google</button>
+        <button type="button" class="btn dark wide" data-p="facebook">Tęsti su Facebook</button>
+        <p class="muted" style="text-align:center">arba įrašyk vardą ir el. paštą</p>
+      </div>
+      <div id="who" class="row between" hidden><span>Prisijungta: <strong id="whoEmail"></strong></span><button type="button" class="btn ghost small" id="whoOut">Kitas būdas</button></div>
+      <label>Vardas ir pavardė<input id="name" autocomplete="name" required maxlength="80"></label>
+      <label id="emailWrap">El. paštas<input id="email" type="email" autocomplete="email" required maxlength="200"></label>
+      <p class="muted" id="emailNote">Su šiuo el. paštu vėliau prisijungsi prie programėlės.</p>
+      <p class="err" id="err" hidden></p>
+      <button class="btn blue wide" type="submit" id="pay">Mokėti</button>
+      <p class="muted">Mokėjimą saugiai apdoroja Stripe. Pinigai eina tiesiai treneriui.</p>
+    </form>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="common.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const token = q.get('i'), slug = q.get('s');
+let chosen = null, buyer = null;
+
+// signed in with Apple/Google/Facebook on this page: that account is the client
+async function whoAmI() {
+  const { data: { session } } = await sb.auth.getSession();
+  buyer = session?.user ?? null;
+  const on = !!buyer?.email;
+  show('authBox', !on); show('who', on); show('emailWrap', !on); show('emailNote', !on);
+  $('email').required = !on;
+  if (on) {
+    $('whoEmail').textContent = buyer.email;
+    const n = buyer.user_metadata?.full_name || buyer.user_metadata?.name;
+    if (n && !$('name').value) $('name').value = n;
+  }
+}
+document.querySelectorAll('#authBox [data-p]').forEach((b) => (b.onclick = () => {
+  const back = new URL(location.href);
+  if (chosen) back.searchParams.set('p', chosen.id);
+  sb.auth.signInWithOAuth({ provider: b.dataset.p, options: { redirectTo: back.toString(), ...(b.dataset.p === 'facebook' ? { scopes: 'email' } : {}) } });
+}));
+$('whoOut').onclick = async () => { await sb.auth.signOut(); await whoAmI(); };
+
+async function start() {
+  const { data } = await sb.rpc('shop_view', { p_slug: slug, p_token: token });
+  show('loading', false);
+  if (!data) { show('missing'); return; }
+  if (!data.ready || !data.products.length) { show('notReady'); return; }
+  if (data.state === 'paid') { show('paid'); return; }
+  document.title = `${data.trainer} · ${BRAND}`;
+  $('trainer').textContent = data.trainer;
+  if (data.avatar_url) $('avatar').outerHTML = `<img class="avatar" src="${esc(data.avatar_url)}" alt="">`;
+  else $('avatar').textContent = (data.trainer || '?').slice(0, 1).toUpperCase();
+  if (data.state === 'renew') { $('kicker').textContent = 'Pratęsk su treneriu'; $('intro').textContent = 'Pasirink, ką perki. Prieiga pratęsiama iškart po apmokėjimo.'; }
+  if (data.name) $('name').value = data.name;
+  $('products').innerHTML = data.products.map((p) => `
+    <button type="button" class="product choice" data-id="${p.id}">
+      <div class="row between"><strong>${esc(p.name)}</strong><span class="price">${priceLabel(p)}</span></div>
+      <span class="muted">${whenLabel(p)}</span>
+      ${p.description ? `<span class="muted">${esc(p.description)}</span>` : ''}
+    </button>`).join('');
+  $('products').querySelectorAll('.choice').forEach((b) => (b.onclick = () => {
+    chosen = data.products.find((p) => p.id === b.dataset.id);
+    $('products').querySelectorAll('.choice').forEach((x) => x.classList.toggle('on', x === b));
+    $('buyTitle').textContent = `${chosen.name}: ${priceLabel(chosen)}`;
+    show('buy'); $('buy').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }));
+  show('shop');
+  await whoAmI();
+  const again = q.get('p') && $('products').querySelector(`.choice[data-id="${q.get('p')}"]`);
+  if (again) again.click(); else if (data.products.length === 1) $('products').querySelector('.choice').click();
+}
+
+$('buy').onsubmit = async (e) => {
+  e.preventDefault(); show('err', false); $('pay').disabled = true;
+  try {
+    const r = await fn('shop-checkout', { product_id: chosen.id, token, name: $('name').value.trim(), email: buyer?.email || $('email').value.trim() });
+    location.href = r.url;
+  } catch (er) { $('err').textContent = er.message || 'Nepavyko. Pabandyk dar kartą.'; show('err'); $('pay').disabled = false; }
+};
+start();
+</script>
+</body>
+</html>

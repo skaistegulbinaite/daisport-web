@@ -1,0 +1,76 @@
+/* DAI sport website. Same look as the app (mobile/src/theme.ts): black ground,
+   near-black cards, white pill buttons, light blue accent, Figtree, no italics.
+   Every colour is a token here - change them in one place. */
+:root {
+  --ground: #000000;
+  --card: #141416;
+  --card2: #2c2c2e;
+  --ink: #ffffff;
+  --muted: #9a9aa0;
+  --faint: #3a3a3c;
+  --blue: #9ed6e8;
+  --blue-sheer: rgba(158, 214, 232, 0.16);
+  --on-blue: #0a0a0a;
+  --on-white: #0a0a0a;
+  --danger: #ff6b6b;
+  --success: #7edc9a;
+  --r-s: 12px; --r-m: 16px; --r-l: 22px; --r-pill: 999px;
+  --font: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--ground); color: var(--ink); }
+body { margin: 0; font-family: var(--font); font-weight: 500; font-size: 16px; line-height: 1.45; padding-inline: 16px; padding-block: 20px 60px; }
+.wrap { max-width: 620px; margin: 0 auto; display: grid; gap: 16px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: -0.2px; }
+.brand img { width: 34px; height: 34px; border-radius: 9px; }
+h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin: 8px 0 0; text-wrap: balance; }
+h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; margin: 0; }
+p { margin: 0; }
+.muted { color: var(--muted); font-size: 14px; }
+.section { color: var(--blue); font-weight: 600; font-size: 13px; letter-spacing: 0.4px; text-transform: uppercase; }
+.card { background: var(--card); border-radius: var(--r-l); padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.row.between { justify-content: space-between; }
+.stack { display: grid; gap: 10px; }
+
+.btn { appearance: none; border: 0; cursor: pointer; font: inherit; font-weight: 800; font-size: 16px; border-radius: var(--r-pill); padding: 14px 22px; background: var(--ink); color: var(--on-white); text-align: center; text-decoration: none; display: inline-block; }
+.btn.blue { background: var(--blue); color: var(--on-blue); }
+.btn.dark { background: var(--card2); color: var(--ink); }
+.btn.ghost { background: transparent; color: var(--muted); padding-inline: 8px; }
+.btn.small { font-size: 14px; padding: 9px 16px; }
+.btn.wide { width: 100%; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .choice:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+label { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--card2); border: 0; border-radius: var(--r-m); padding: 13px 14px; width: 100%; }
+textarea { min-height: 76px; resize: vertical; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 420px) { .two { grid-template-columns: 1fr; } }
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { font: inherit; font-weight: 600; font-size: 14px; border: 0; cursor: pointer; border-radius: var(--r-pill); padding: 9px 14px; background: var(--card2); color: #d8d8dc; }
+.chip.on { background: var(--ink); color: var(--on-white); }
+
+.pill { display: inline-block; font-size: 12px; font-weight: 700; border-radius: var(--r-pill); padding: 3px 10px; background: var(--blue-sheer); color: var(--blue); }
+.pill.ok { background: rgba(126, 220, 154, 0.14); color: var(--success); }
+.pill.warn { background: rgba(255, 107, 107, 0.14); color: var(--danger); }
+.err { color: var(--danger); font-size: 14px; }
+.okmsg { color: var(--success); font-size: 14px; }
+
+.product { background: var(--card2); border-radius: var(--r-m); padding: 14px; display: grid; gap: 6px; }
+.product .price { font-weight: 800; font-size: 18px; }
+.choice { cursor: pointer; border: 2px solid transparent; text-align: left; font: inherit; color: inherit; width: 100%; }
+.choice.on { border-color: var(--blue); }
+
+.code { font-size: 40px; font-weight: 800; letter-spacing: 6px; text-align: center; background: var(--card2); border-radius: var(--r-l); padding: 18px; font-variant-numeric: tabular-nums; }
+.linkbox { display: flex; gap: 8px; align-items: center; background: var(--card2); border-radius: var(--r-m); padding: 8px 8px 8px 14px; min-width: 0; }
+.linkbox span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--muted); }
+.list { display: grid; gap: 2px; }
+.list .item { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--faint); font-size: 14px; }
+.list .item:last-child { border-bottom: 0; }
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--card2); object-fit: cover; display: grid; place-items: center; font-weight: 800; font-size: 20px; color: var(--blue); }
+[hidden] { display: none !important; }
